@@ -8,19 +8,33 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
-//HELLO THERE
-public class WordCount {
+public class BigramCount {
 
 	public static class Map extends MapReduceBase implements Mapper<LongWritable, Text, Text, IntWritable> {
 	  private final static IntWritable one = new IntWritable(1);
-	  private Text word = new Text();
+	  private Text word1 = new Text();
+	  private Text word2 = new Text();
+	  private Text bigram = new Text();
+          private boolean first_time;
 
 	  public void map(LongWritable key, Text value, OutputCollector<Text, IntWritable> output, Reporter reporter) throws IOException {
 		String line = value.toString();
 		StringTokenizer tokenizer = new StringTokenizer(line);
+		first_time = true;
 		while (tokenizer.hasMoreTokens()) {
-		  word.set(tokenizer.nextToken());
-		  output.collect(word, one); // <"word", 1>
+		  if (first_time){
+		    word2.set(tokenizer.nextToken());  
+		    first_time = false;
+		  }
+		  else{
+		    word1.set(word2);
+		    word2.set(tokenizer.nextToken());
+		    bigram.set(word1.toString().concat(" ").concat(word2.toString()));
+		    //System.out.println(word1);
+		    //System.out.println(word2);
+		    //System.out.println(bigram);
+		    output.collect(bigram, one); // <"word1 + word2", 1>
+		  }
 		}
 	  }
 	}
@@ -36,8 +50,8 @@ public class WordCount {
 	}
 
 	public static void main(String[] args) throws Exception {
-	  JobConf conf = new JobConf(WordCount.class);
-	  conf.setJobName("wordcount");
+	  JobConf conf = new JobConf(BigramCount.class);
+	  conf.setJobName("bigramcount");
 
 	  conf.setOutputKeyClass(Text.class);
 	  conf.setOutputValueClass(IntWritable.class);
